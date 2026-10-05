@@ -3,6 +3,7 @@ import type { ReturnTypeOfUseCalculator } from './calculatorTypes'
 import { IngredientEditor } from './IngredientEditor'
 import { ModeSelector } from './ModeSelector'
 import { ProductionControls } from './ProductionControls'
+import { PrefermentEditor } from './PrefermentEditor'
 import { ResultsCard } from './ResultsCard'
 import '../styles/calculator.css'
 
@@ -23,6 +24,7 @@ function CalculatorPanelContent({ calculator }: { calculator: ReturnTypeOfUseCal
 
         <ProductionControls calculator={calculator} />
         <IngredientEditor calculator={calculator} />
+        <PrefermentEditor calculator={calculator} />
       </section>
 
       <aside className="results-column">
