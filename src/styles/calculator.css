@@ -179,6 +179,11 @@
   font-weight: 750;
 }
 
+.unit-display {
+  display: grid;
+  place-items: center;
+}
+
 .text-input:focus-visible,
 .number-input:focus-visible,
 .unit-select:focus-visible,
