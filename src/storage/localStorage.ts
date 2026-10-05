@@ -55,8 +55,10 @@ function isFormula(value: unknown): value is DoughFormula {
   if (!isRecord(value) || !Array.isArray(value.ingredients)) return false
   if (!value.ingredients.every(isIngredient)) return false
   const ids = value.ingredients.map((ingredient) => ingredient.id)
+  const water = value.ingredients.filter((ingredient) => ingredient.kind === 'water')
   return new Set(ids).size === ids.length
-    && value.ingredients.some((ingredient) => ingredient.kind === 'water')
+    && water.length === 1
+    && water[0].unit === 'percent'
 }
 
 function isSession(value: unknown): value is CalculatorSession {
