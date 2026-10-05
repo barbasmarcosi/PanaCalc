@@ -9,6 +9,7 @@ import {
 import type { FormulaPresetV2 } from '../storage/types'
 import { createId } from './id'
 import { useCalculator } from './useCalculator'
+import { usePlanner } from './usePlanner'
 
 const PERSISTENCE_WARNING = 'No se pudieron guardar los cambios en este dispositivo.'
 
@@ -22,8 +23,8 @@ function cloneFormula(formula: DoughFormula): DoughFormula {
 export function usePersistentCalculator(storage?: Storage) {
   const storageRef = useRef<Storage | undefined>(storage)
   const initialSessionRef = useRef(loadSessionV2(storageRef.current))
-  const plannerRef = useRef(initialSessionRef.current.planner)
   const calculator = useCalculator(initialSessionRef.current)
+  const planner = usePlanner(initialSessionRef.current.planner)
   const [presets, setPresets] = useState<FormulaPresetV2[]>(() => loadPresetsV2(storageRef.current))
   const [persistenceWarning, setPersistenceWarning] = useState<string | null>(null)
 
@@ -40,12 +41,13 @@ export function usePersistentCalculator(storage?: Storage) {
         resultUnit: calculator.state.resultUnit,
       },
       formula: calculator.state.formula,
-      planner: plannerRef.current,
+      planner: planner.state,
     }, storageRef.current)
     setPersistenceWarning(ok ? null : PERSISTENCE_WARNING)
   }, [
     calculator.state.formula,
     calculator.state.mode,
+    planner.state,
     calculator.state.pieceCountInput,
     calculator.state.pieceMassInput,
     calculator.state.pieceMassUnit,
@@ -135,6 +137,7 @@ export function usePersistentCalculator(storage?: Storage) {
 
   return {
     calculator,
+    planner,
     presets,
     persistenceWarning,
     savePreset,
