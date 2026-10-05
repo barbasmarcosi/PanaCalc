@@ -1,9 +1,12 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../app/App'
 
 describe('PlannerPanel', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
   it('calculates a local start time from a bake target and stage duration', async () => {
     const user = userEvent.setup()
     render(<App />)
