@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../app/App'
 
 describe('PlannerPanel', () => {
+  beforeEach(() => window.localStorage.clear())
   beforeEach(() => {
     localStorage.clear()
   })
