@@ -96,3 +96,23 @@ describe('usePersistentCalculator', () => {
     expect(result.current.calculator.state.result).not.toBeNull()
   })
 })
+
+
+describe('V2 planner persistence', () => {
+  it('persists planner target and stages in the working session', async () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+
+    act(() => result.current.planner.setTargetDateTimeInput('2026-10-06T20:30'))
+    act(() => result.current.planner.addStage())
+    const stageId = result.current.planner.state.stages[0].id
+    act(() => result.current.planner.setStageName(stageId, 'Bloque'))
+    act(() => result.current.planner.setStageDurationHoursInput(stageId, '2'))
+
+    await waitFor(() => {
+      const persisted = loadSessionV2(storage, 'production')
+      expect(persisted.planner.targetDateTimeInput).toBe('2026-10-06T20:30')
+      expect(persisted.planner.stages[0]).toMatchObject({ name: 'Bloque', durationMinutes: 120 })
+    })
+  })
+})
