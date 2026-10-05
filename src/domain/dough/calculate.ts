@@ -1,3 +1,4 @@
+import { calculatePrefermentBreakdown } from './preferments'
 import type { DoughFormula, DoughResult } from './types'
 
 export function calculateFromFlour(flourGrams: number, formula: DoughFormula): DoughResult {
@@ -9,10 +10,16 @@ export function calculateFromFlour(flourGrams: number, formula: DoughFormula): D
       : ingredient.quantity,
   }))
 
+  const waterIngredient = formula.ingredients.find((ingredient) => ingredient.kind === 'water')
+  const waterGrams = waterIngredient
+    ? ingredients.find((ingredient) => ingredient.id === waterIngredient.id)?.grams ?? 0
+    : 0
+
   return {
     flourGrams,
     ingredients,
     totalMassGrams: flourGrams + ingredients.reduce((sum, ingredient) => sum + ingredient.grams, 0),
+    prefermentBreakdown: calculatePrefermentBreakdown(flourGrams, waterGrams, formula.preferments ?? []),
   }
 }
 
