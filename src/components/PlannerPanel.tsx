@@ -1,4 +1,3 @@
-import type { ReturnType } from 'typescript'
 import type { PersistentCalculatorController } from '../app/usePersistentCalculator'
 
 interface PlannerPanelProps {
