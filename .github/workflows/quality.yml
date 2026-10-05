@@ -27,5 +27,7 @@ jobs:
         run: npm run typecheck
       - name: Lint
         run: npm run lint
-      - name: Build
+      - name: Production build
         run: npm run build
+      - name: Preview build
+        run: npm run build:preview

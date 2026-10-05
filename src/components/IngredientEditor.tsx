@@ -1,9 +1,12 @@
 import type { IngredientUnit } from '../domain/dough/types'
+import type { MassUnit } from '../domain/mass/units'
 import type { ReturnTypeOfUseCalculator } from './calculatorTypes'
 
 interface IngredientEditorProps {
   calculator: ReturnTypeOfUseCalculator
 }
+
+type IngredientDisplayUnit = 'percent' | MassUnit
 
 export function IngredientEditor({ calculator }: IngredientEditorProps) {
   const { state } = calculator
@@ -29,6 +32,9 @@ export function IngredientEditor({ calculator }: IngredientEditorProps) {
         {state.formula.ingredients.map((ingredient) => {
           const currentName = ingredient.name || 'Ingrediente'
           const isCustom = ingredient.kind === 'custom'
+          const selectedUnit: IngredientDisplayUnit = ingredient.unit === 'percent'
+            ? 'percent'
+            : ingredient.massUnit ?? 'g'
 
           return (
             <div
@@ -70,11 +76,21 @@ export function IngredientEditor({ calculator }: IngredientEditorProps) {
                     <select
                       aria-label={`Unidad de ${currentName}`}
                       className="unit-select"
-                      value={ingredient.unit}
-                      onChange={(event) => calculator.setIngredientUnit(ingredient.id, event.target.value as IngredientUnit)}
+                      value={selectedUnit}
+                      onChange={(event) => {
+                        const unit = event.target.value as IngredientDisplayUnit
+                        if (unit === 'percent') {
+                          calculator.setIngredientUnit(ingredient.id, 'percent' as IngredientUnit)
+                        } else {
+                          calculator.setIngredientMassUnit(ingredient.id, unit)
+                        }
+                      }}
                     >
                       <option value="percent">%</option>
-                      <option value="grams">g</option>
+                      <option value="g">g</option>
+                      <option value="kg">kg</option>
+                      <option value="oz">oz</option>
+                      <option value="lb">lb</option>
                     </select>
                   </label>
                 ) : (

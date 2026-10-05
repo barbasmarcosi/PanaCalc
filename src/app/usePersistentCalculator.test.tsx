@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { loadPresets, loadSession, saveSession } from '../storage/localStorage'
+import { loadPresetsV2, loadSessionV2, saveSession } from '../storage/localStorage'
 import type { CalculatorSession } from '../storage/types'
 import { usePersistentCalculator } from './usePersistentCalculator'
 
@@ -35,7 +35,7 @@ describe('usePersistentCalculator', () => {
     expect(result.current.calculator.state.formula.ingredients[0].quantity).toBe(75)
 
     act(() => result.current.calculator.setTargetInput('700'))
-    await waitFor(() => expect(loadSession(storage).targetInput).toBe('700'))
+    await waitFor(() => expect(loadSessionV2(storage, 'production').production.targetInput).toBe('700'))
   })
 
   it('saves presets as formulas only and loads them without changing mode or target', () => {
@@ -49,7 +49,7 @@ describe('usePersistentCalculator', () => {
 
     expect(result.current.presets).toHaveLength(1)
     expect(result.current.presets[0].name).toBe('Focaccia')
-    expect(loadPresets(storage)[0].formula.ingredients[0].quantity).toBe(80)
+    expect(loadPresetsV2(storage, 'production')[0].formula.ingredients[0].quantity).toBe(80)
 
     act(() => result.current.calculator.setIngredientQuantityInput('water', '60'))
     act(() => result.current.loadPreset(result.current.presets[0].id))
@@ -94,5 +94,88 @@ describe('usePersistentCalculator', () => {
     await waitFor(() => expect(result.current.persistenceWarning).toBeTruthy())
     expect(result.current.calculator.state.targetInput).toBe('1200')
     expect(result.current.calculator.state.result).not.toBeNull()
+  })
+})
+
+
+describe('V2 planner persistence', () => {
+  it('persists planner target and stages in the working session', async () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+
+    act(() => result.current.planner.setTargetDateTimeInput('2026-10-06T20:30'))
+    act(() => result.current.planner.addStage())
+    const stageId = result.current.planner.state.stages[0].id
+    act(() => result.current.planner.setStageName(stageId, 'Bloque'))
+    act(() => result.current.planner.setStageDurationHoursInput(stageId, '2'))
+
+    await waitFor(() => {
+      const persisted = loadSessionV2(storage, 'production')
+      expect(persisted.planner.targetDateTimeInput).toBe('2026-10-06T20:30')
+      expect(persisted.planner.stages[0]).toMatchObject({ name: 'Bloque', durationMinutes: 120 })
+    })
+  })
+})
+
+
+describe('V2 preset organization', () => {
+  it('creates presets with neutral organization metadata', () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+    act(() => result.current.savePreset('Pizza'))
+    expect(result.current.presets[0]).toMatchObject({ favorite: false, category: null })
+  })
+
+  it('toggles favorites and trims category metadata', () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+    act(() => result.current.savePreset('Pizza'))
+    const id = result.current.presets[0].id
+
+    act(() => expect(result.current.togglePresetFavorite(id)).toBe(true))
+    expect(result.current.presets[0].favorite).toBe(true)
+
+    act(() => expect(result.current.updatePresetMetadata(id, '  Pizza nueva  ', '  Pizza  ')).toBe(true))
+    expect(result.current.presets[0]).toMatchObject({ name: 'Pizza nueva', category: 'Pizza' })
+
+    act(() => expect(result.current.updatePresetMetadata(id, 'Pizza nueva', '   ')).toBe(true))
+    expect(result.current.presets[0].category).toBeNull()
+  })
+
+  it('moves presets up and down using persisted array order', () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+    act(() => result.current.savePreset('Uno'))
+    act(() => result.current.savePreset('Dos'))
+    act(() => result.current.savePreset('Tres'))
+    const two = result.current.presets.find((preset) => preset.name === 'Dos')!
+
+    act(() => expect(result.current.movePreset(two.id, 'up')).toBe(true))
+    expect(result.current.presets.map((preset) => preset.name)).toEqual(['Dos', 'Uno', 'Tres'])
+
+    act(() => expect(result.current.movePreset(two.id, 'down')).toBe(true))
+    expect(result.current.presets.map((preset) => preset.name)).toEqual(['Uno', 'Dos', 'Tres'])
+  })
+
+  it('keeps boundary moves as safe no-ops', () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+    act(() => result.current.savePreset('Uno'))
+    const id = result.current.presets[0].id
+    act(() => expect(result.current.movePreset(id, 'up')).toBe(false))
+    act(() => expect(result.current.movePreset(id, 'down')).toBe(false))
+    expect(result.current.presets.map((preset) => preset.name)).toEqual(['Uno'])
+  })
+
+  it('duplicates favorite and category metadata at the end', () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+    act(() => result.current.savePreset('Pizza', 'Pizza'))
+    const id = result.current.presets[0].id
+    act(() => result.current.togglePresetFavorite(id))
+    act(() => result.current.duplicatePreset(id))
+
+    expect(result.current.presets[1]).toMatchObject({ favorite: true, category: 'Pizza' })
+    expect(result.current.presets[1].id).not.toBe(id)
   })
 })

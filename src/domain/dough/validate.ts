@@ -1,3 +1,4 @@
+import { validatePreferments } from './preferments'
 import type { DoughFormula } from './types'
 
 export type CalculationMode = 'flour' | 'totalMass'
@@ -31,6 +32,8 @@ export function validateCalculation(
       )
     }
   }
+
+  errors.push(...validatePreferments(formula))
 
   if (mode === 'totalMass' && Number.isFinite(targetGrams) && targetGrams > 0) {
     const fixedGrams = formula.ingredients

@@ -1,3 +1,5 @@
+import type { MassUnit } from '../mass/units'
+
 export type IngredientUnit = 'percent' | 'grams'
 
 export interface FormulaIngredient {
@@ -6,10 +8,19 @@ export interface FormulaIngredient {
   quantity: number
   unit: IngredientUnit
   kind: 'water' | 'custom'
+  massUnit?: MassUnit
+}
+
+export interface Preferment {
+  id: string
+  name: string
+  flourPercent: number
+  hydrationPercent: number
 }
 
 export interface DoughFormula {
   ingredients: FormulaIngredient[]
+  preferments?: Preferment[]
 }
 
 export interface IngredientResult {
@@ -18,10 +29,25 @@ export interface IngredientResult {
   grams: number
 }
 
+export interface PrefermentResult {
+  id: string
+  name: string
+  flourGrams: number
+  waterGrams: number
+  totalGrams: number
+}
+
+export interface PrefermentBreakdown {
+  preferments: PrefermentResult[]
+  finalMixFlourGrams: number
+  finalMixWaterGrams: number
+}
+
 export interface DoughResult {
   flourGrams: number
   ingredients: IngredientResult[]
   totalMassGrams: number
+  prefermentBreakdown: PrefermentBreakdown
 }
 
 export const DEFAULT_FORMULA: DoughFormula = {
@@ -34,4 +60,5 @@ export const DEFAULT_FORMULA: DoughFormula = {
       kind: 'water',
     },
   ],
+  preferments: [],
 }

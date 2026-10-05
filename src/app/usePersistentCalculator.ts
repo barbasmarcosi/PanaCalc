@@ -1,53 +1,81 @@
 import { useEffect, useRef, useState } from 'react'
 import type { DoughFormula } from '../domain/dough/types'
 import {
-  loadPresets,
-  loadSession,
-  savePresets,
-  saveSession,
+  loadPresetsV2,
+  loadSessionV2,
+  savePresetsV2,
+  saveSessionV2,
 } from '../storage/localStorage'
-import type { FormulaPreset } from '../storage/types'
+import type { FormulaPresetV2 } from '../storage/types'
 import { createId } from './id'
 import { useCalculator } from './useCalculator'
+import { usePlanner } from './usePlanner'
 
 const PERSISTENCE_WARNING = 'No se pudieron guardar los cambios en este dispositivo.'
 
 function cloneFormula(formula: DoughFormula): DoughFormula {
-  return { ingredients: formula.ingredients.map((ingredient) => ({ ...ingredient })) }
+  return {
+    ingredients: formula.ingredients.map((ingredient) => ({ ...ingredient })),
+    preferments: formula.preferments?.map((preferment) => ({ ...preferment })),
+  }
 }
 
 export function usePersistentCalculator(storage?: Storage) {
   const storageRef = useRef<Storage | undefined>(storage)
-  const initialSessionRef = useRef(loadSession(storageRef.current))
+  const initialSessionRef = useRef(loadSessionV2(storageRef.current))
   const calculator = useCalculator(initialSessionRef.current)
-  const [presets, setPresets] = useState<FormulaPreset[]>(() => loadPresets(storageRef.current))
+  const planner = usePlanner(initialSessionRef.current.planner)
+  const [presets, setPresets] = useState<FormulaPresetV2[]>(() => loadPresetsV2(storageRef.current))
   const [persistenceWarning, setPersistenceWarning] = useState<string | null>(null)
 
   useEffect(() => {
-    const ok = saveSession({
-      mode: calculator.state.mode,
-      targetInput: calculator.state.targetInput,
+    const ok = saveSessionV2({
+      production: {
+        mode: calculator.state.mode,
+        targetInput: calculator.state.targetInput,
+        targetUnit: calculator.state.targetUnit,
+        pieceCountInput: calculator.state.pieceCountInput,
+        pieceMassInput: calculator.state.pieceMassInput,
+        pieceMassUnit: calculator.state.pieceMassUnit,
+        scaleMultiplierInput: calculator.state.scaleMultiplierInput,
+        resultUnit: calculator.state.resultUnit,
+      },
       formula: calculator.state.formula,
+      planner: planner.state,
     }, storageRef.current)
     setPersistenceWarning(ok ? null : PERSISTENCE_WARNING)
-  }, [calculator.state.formula, calculator.state.mode, calculator.state.targetInput])
+  }, [
+    calculator.state.formula,
+    calculator.state.mode,
+    planner.state,
+    calculator.state.pieceCountInput,
+    calculator.state.pieceMassInput,
+    calculator.state.pieceMassUnit,
+    calculator.state.resultUnit,
+    calculator.state.scaleMultiplierInput,
+    calculator.state.targetInput,
+    calculator.state.targetUnit,
+  ])
 
-  function commitPresets(next: FormulaPreset[]) {
+  function commitPresets(next: FormulaPresetV2[]) {
     setPresets(next)
-    const ok = savePresets(next, storageRef.current)
+    const ok = savePresetsV2(next, storageRef.current)
     setPersistenceWarning(ok ? null : PERSISTENCE_WARNING)
     return ok
   }
 
-  function savePreset(name: string): boolean {
+  function savePreset(name: string, category: string | null = null): boolean {
     const trimmed = name.trim()
     if (!trimmed) return false
+    const trimmedCategory = category?.trim() || null
 
     const now = new Date().toISOString()
-    const preset: FormulaPreset = {
+    const preset: FormulaPresetV2 = {
       id: createId(),
       name: trimmed,
       formula: cloneFormula(calculator.state.formula),
+      favorite: false,
+      category: trimmedCategory,
       createdAt: now,
       updatedAt: now,
     }
@@ -62,14 +90,46 @@ export function usePersistentCalculator(storage?: Storage) {
     return true
   }
 
-  function renamePreset(id: string, name: string): boolean {
+  function updatePresetMetadata(id: string, name: string, category: string | null): boolean {
     const trimmed = name.trim()
     if (!trimmed) return false
+    if (!presets.some((preset) => preset.id === id)) return false
+
     const now = new Date().toISOString()
-    const next = presets.map((preset) => (
-      preset.id === id ? { ...preset, name: trimmed, updatedAt: now } : preset
-    ))
-    if (!next.some((preset) => preset.id === id)) return false
+    const trimmedCategory = category?.trim() || null
+    commitPresets(presets.map((preset) => (
+      preset.id === id
+        ? { ...preset, name: trimmed, category: trimmedCategory, updatedAt: now }
+        : preset
+    )))
+    return true
+  }
+
+  function renamePreset(id: string, name: string): boolean {
+    const preset = presets.find((item) => item.id === id)
+    if (!preset) return false
+    return updatePresetMetadata(id, name, preset.category)
+  }
+
+  function togglePresetFavorite(id: string): boolean {
+    if (!presets.some((preset) => preset.id === id)) return false
+    const now = new Date().toISOString()
+    commitPresets(presets.map((preset) => (
+      preset.id === id
+        ? { ...preset, favorite: !preset.favorite, updatedAt: now }
+        : preset
+    )))
+    return true
+  }
+
+  function movePreset(id: string, direction: 'up' | 'down'): boolean {
+    const index = presets.findIndex((preset) => preset.id === id)
+    if (index < 0) return false
+    const target = direction === 'up' ? index - 1 : index + 1
+    if (target < 0 || target >= presets.length) return false
+
+    const next = [...presets]
+    ;[next[index], next[target]] = [next[target], next[index]]
     commitPresets(next)
     return true
   }
@@ -78,10 +138,12 @@ export function usePersistentCalculator(storage?: Storage) {
     const source = presets.find((preset) => preset.id === id)
     if (!source) return false
     const now = new Date().toISOString()
-    const duplicate: FormulaPreset = {
+    const duplicate: FormulaPresetV2 = {
       id: createId(),
       name: `${source.name} copia`,
       formula: cloneFormula(source.formula),
+      favorite: source.favorite,
+      category: source.category,
       createdAt: now,
       updatedAt: now,
     }
@@ -108,11 +170,15 @@ export function usePersistentCalculator(storage?: Storage) {
 
   return {
     calculator,
+    planner,
     presets,
     persistenceWarning,
     savePreset,
     loadPreset,
     renamePreset,
+    updatePresetMetadata,
+    togglePresetFavorite,
+    movePreset,
     duplicatePreset,
     deletePreset,
     updatePresetFromCurrentFormula,

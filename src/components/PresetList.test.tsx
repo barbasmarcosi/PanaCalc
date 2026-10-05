@@ -112,3 +112,61 @@ describe('PresetList', () => {
     expect(screen.queryByText('Pizza')).not.toBeInTheDocument()
   })
 })
+
+
+describe('PresetList V2 organization UI', () => {
+  it('filters presets by name case-insensitively', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+
+    for (const name of ['Napolitana', 'Focaccia']) {
+      await user.click(screen.getByRole('button', { name: 'Guardar fórmula' }))
+      await user.type(screen.getByLabelText('Nombre de la fórmula'), name)
+      await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    }
+
+    await user.type(screen.getByLabelText('Buscar fórmulas'), 'NAPO')
+    expect(screen.getByText('Napolitana')).toBeInTheDocument()
+    expect(screen.queryByText('Focaccia')).not.toBeInTheDocument()
+  })
+
+  it('marks a preset as favorite with accessible pressed state', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+    await user.click(screen.getByRole('button', { name: 'Guardar fórmula' }))
+    await user.type(screen.getByLabelText('Nombre de la fórmula'), 'Pizza')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    const favorite = screen.getByRole('button', { name: 'Marcar Pizza como favorita' })
+    expect(favorite).toHaveAttribute('aria-pressed', 'false')
+    await user.click(favorite)
+    expect(screen.getByRole('button', { name: 'Quitar Pizza de favoritas' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('stores and displays an optional category', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+    await user.click(screen.getByRole('button', { name: 'Guardar fórmula' }))
+    await user.type(screen.getByLabelText('Nombre de la fórmula'), 'Napolitana')
+    await user.type(screen.getByLabelText('Categoría'), 'Pizza')
+    await user.click(screen.getByRole('button', { name: 'Guardar' }))
+
+    expect(screen.getByText('Pizza', { selector: '.preset-category' })).toBeInTheDocument()
+  })
+
+  it('reorders cards with manual move controls', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+
+    for (const name of ['Uno', 'Dos']) {
+      await user.click(screen.getByRole('button', { name: 'Guardar fórmula' }))
+      await user.type(screen.getByLabelText('Nombre de la fórmula'), name)
+      await user.click(screen.getByRole('button', { name: 'Guardar' }))
+    }
+
+    await user.click(screen.getByRole('button', { name: 'Subir Dos' }))
+    const cards = screen.getAllByRole('article')
+    expect(within(cards[0]).getByText('Dos')).toBeInTheDocument()
+    expect(within(cards[1]).getByText('Uno')).toBeInTheDocument()
+  })
+})
