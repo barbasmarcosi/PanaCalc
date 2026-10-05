@@ -189,3 +189,36 @@ describe('useCalculator V2 production state', () => {
     expect(result.current.state.errors).toContain('La cantidad de piezas debe ser un entero mayor que 0.')
   })
 })
+
+
+describe('useCalculator V2 preferment state', () => {
+  it('adds, edits, and removes a preferment', () => {
+    const { result } = renderHook(() => useCalculator())
+    act(() => result.current.addPreferment())
+    const preferment = result.current.state.formula.preferments?.[0]
+    expect(preferment).toBeDefined()
+
+    act(() => result.current.setPrefermentName(preferment!.id, 'Poolish'))
+    act(() => result.current.setPrefermentFlourPercentInput(preferment!.id, '20'))
+    act(() => result.current.setPrefermentHydrationPercentInput(preferment!.id, '100'))
+
+    expect(result.current.state.formula.preferments?.[0]).toMatchObject({
+      name: 'Poolish',
+      flourPercent: 20,
+      hydrationPercent: 100,
+    })
+
+    act(() => result.current.removePreferment(preferment!.id))
+    expect(result.current.state.formula.preferments).toEqual([])
+  })
+
+  it('suppresses results while a preferment field is transiently invalid', () => {
+    const { result } = renderHook(() => useCalculator())
+    act(() => result.current.addPreferment())
+    const preferment = result.current.state.formula.preferments![0]
+
+    act(() => result.current.setPrefermentFlourPercentInput(preferment.id, ''))
+    expect(result.current.state.result).toBeNull()
+    expect(result.current.state.errors).toContain('Ingresá un porcentaje de harina válido para Prefermento.')
+  })
+})
