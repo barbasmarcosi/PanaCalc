@@ -80,3 +80,114 @@ describe('CalculatorPanel', () => {
     expect(screen.queryByRole('region', { name: 'Resultado' })).not.toBeInTheDocument()
   })
 })
+
+
+describe('CalculatorPanel V2 production UI', () => {
+  it('offers total mass, flour, and pieces production modes', () => {
+    render(<CalculatorPanel />)
+    expect(screen.getByRole('button', { name: 'Masa total' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Harina' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Piezas' })).toBeInTheDocument()
+  })
+
+  it('calculates six 280 gram pieces as 1680 grams', async () => {
+    const user = userEvent.setup()
+    render(<CalculatorPanel />)
+    await user.click(screen.getByRole('button', { name: 'Piezas' }))
+
+    const count = screen.getByLabelText('Cantidad de piezas')
+    const mass = screen.getByLabelText('Peso por pieza')
+    await user.clear(count)
+    await user.type(count, '6')
+    await user.clear(mass)
+    await user.type(mass, '280')
+
+    expect(screen.getByRole('region', { name: 'Resultado' })).toHaveTextContent('1.680 g')
+    expect(screen.queryByLabelText('Multiplicador personalizado')).not.toBeInTheDocument()
+  })
+
+  it('rejects fractional piece counts in the UI', async () => {
+    const user = userEvent.setup()
+    render(<CalculatorPanel />)
+    await user.click(screen.getByRole('button', { name: 'Piezas' }))
+    const count = screen.getByLabelText('Cantidad de piezas')
+    await user.clear(count)
+    await user.type(count, '2,5')
+
+    expect(screen.getByRole('alert')).toHaveTextContent('La cantidad de piezas debe ser un entero mayor que 0.')
+    expect(screen.queryByRole('region', { name: 'Resultado' })).not.toBeInTheDocument()
+  })
+
+  it('changes target units without changing physical dough mass', async () => {
+    const user = userEvent.setup()
+    render(<CalculatorPanel />)
+    const target = screen.getByLabelText('Masa total objetivo')
+    await user.clear(target)
+    await user.type(target, '453.59237')
+
+    await user.selectOptions(screen.getByLabelText('Unidad de masa objetivo'), 'lb')
+
+    expect(target).toHaveValue('1')
+    expect(screen.getByRole('region', { name: 'Resultado' })).toHaveTextContent('453,6 g')
+  })
+
+  it('changes result display units without changing the calculation', async () => {
+    const user = userEvent.setup()
+    render(<CalculatorPanel />)
+
+    await user.selectOptions(screen.getByLabelText('Unidad de resultados'), 'kg')
+
+    const results = screen.getByRole('region', { name: 'Resultado' })
+    expect(results).toHaveTextContent('1 kg')
+    expect(results).toHaveTextContent('0,588 kg')
+  })
+
+  it('offers percent and all mass units for custom ingredients while water stays percent-only', async () => {
+    const user = userEvent.setup()
+    render(<CalculatorPanel />)
+    await user.click(screen.getByRole('button', { name: 'Agregar ingrediente' }))
+    const row = screen.getByTestId('ingredient-custom')
+    const unit = within(row).getByLabelText('Unidad de Ingrediente')
+
+    expect(within(unit).getByRole('option', { name: '%' })).toBeInTheDocument()
+    expect(within(unit).getByRole('option', { name: 'g' })).toBeInTheDocument()
+    expect(within(unit).getByRole('option', { name: 'kg' })).toBeInTheDocument()
+    expect(within(unit).getByRole('option', { name: 'oz' })).toBeInTheDocument()
+    expect(within(unit).getByRole('option', { name: 'lb' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Unidad de Agua')).toHaveTextContent('%')
+  })
+
+  it('reinterprets a custom numeric value in the selected mass unit', async () => {
+    const user = userEvent.setup()
+    render(<CalculatorPanel />)
+    await user.click(screen.getByRole('button', { name: 'Harina' }))
+    await user.clear(screen.getByLabelText('Harina disponible'))
+    await user.type(screen.getByLabelText('Harina disponible'), '1000')
+    await user.click(screen.getByRole('button', { name: 'Agregar ingrediente' }))
+
+    const row = screen.getByTestId('ingredient-custom')
+    const quantity = within(row).getByLabelText('Cantidad de Ingrediente')
+    await user.clear(quantity)
+    await user.type(quantity, '1')
+    await user.selectOptions(within(row).getByLabelText('Unidad de Ingrediente'), 'lb')
+
+    expect(screen.getByRole('region', { name: 'Resultado' })).toHaveTextContent('453,6 g')
+  })
+
+  it('applies quick scaling in total-mass mode while fixed grams stay fixed', async () => {
+    const user = userEvent.setup()
+    render(<CalculatorPanel />)
+    await user.click(screen.getByRole('button', { name: 'Agregar ingrediente' }))
+    const row = screen.getByTestId('ingredient-custom')
+    const quantity = within(row).getByLabelText('Cantidad de Ingrediente')
+    await user.clear(quantity)
+    await user.type(quantity, '15')
+    await user.selectOptions(within(row).getByLabelText('Unidad de Ingrediente'), 'g')
+
+    await user.click(screen.getByRole('button', { name: 'Escalar ×2' }))
+
+    const results = screen.getByRole('region', { name: 'Resultado' })
+    expect(results).toHaveTextContent('2.000 g')
+    expect(results).toHaveTextContent('15 g')
+  })
+})
