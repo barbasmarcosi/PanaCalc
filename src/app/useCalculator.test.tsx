@@ -98,3 +98,94 @@ describe('useCalculator', () => {
     expect(result.current.state.errors).toContain('Ingresá una cantidad válida.')
   })
 })
+
+
+describe('useCalculator V2 production state', () => {
+  it('starts with canonical V2 production defaults', () => {
+    const { result } = renderHook(() => useCalculator())
+    expect(result.current.state.targetUnit).toBe('g')
+    expect(result.current.state.resultUnit).toBe('g')
+    expect(result.current.state.scaleMultiplierInput).toBe('1')
+    expect(result.current.state.pieceCountInput).toBe('6')
+    expect(result.current.state.pieceMassInput).toBe('280')
+    expect(result.current.state.pieceMassUnit).toBe('g')
+  })
+
+  it('preserves physical target mass when changing target units', () => {
+    const { result } = renderHook(() => useCalculator())
+    act(() => result.current.setTargetInput('453.59237'))
+    const before = result.current.state.result?.totalMassGrams
+
+    act(() => result.current.setTargetUnit('lb'))
+
+    expect(result.current.state.targetInput).toBe('1')
+    expect(result.current.state.targetUnit).toBe('lb')
+    expect(result.current.state.result?.totalMassGrams).toBeCloseTo(before!, 12)
+  })
+
+  it('preserves canonical fixed ingredient mass when changing display units', () => {
+    const { result } = renderHook(() => useCalculator())
+    act(() => result.current.addIngredient())
+    const custom = result.current.state.formula.ingredients.find((item) => item.kind === 'custom')!
+
+    act(() => result.current.setIngredientQuantityInput(custom.id, '453.59237'))
+    act(() => result.current.setIngredientUnit(custom.id, 'grams'))
+    act(() => result.current.setIngredientMassUnit(custom.id, 'lb'))
+
+    expect(result.current.state.quantityInputs[custom.id]).toBe('1')
+    expect(result.current.state.formula.ingredients.find((item) => item.id === custom.id)).toMatchObject({
+      quantity: 453.59237,
+      unit: 'grams',
+      massUnit: 'lb',
+    })
+  })
+
+  it('derives total mass from piece count and piece weight', () => {
+    const { result } = renderHook(() => useCalculator())
+    act(() => result.current.setMode('pieces'))
+    act(() => result.current.setPieceCountInput('6'))
+    act(() => result.current.setPieceMassInput('280'))
+
+    expect(result.current.state.result?.totalMassGrams).toBeCloseTo(1680, 12)
+  })
+
+  it('keeps hidden production inputs when switching modes', () => {
+    const { result } = renderHook(() => useCalculator())
+    act(() => result.current.setTargetInput('1200'))
+    act(() => result.current.setMode('pieces'))
+    act(() => result.current.setPieceCountInput('8'))
+    act(() => result.current.setMode('totalMass'))
+
+    expect(result.current.state.targetInput).toBe('1200')
+    expect(result.current.state.pieceCountInput).toBe('8')
+  })
+
+  it('scales a total target without scaling fixed gram ingredients', () => {
+    const { result } = renderHook(() => useCalculator())
+    act(() => result.current.addIngredient())
+    const custom = result.current.state.formula.ingredients.find((item) => item.kind === 'custom')!
+    act(() => result.current.setIngredientName(custom.id, 'Aceite'))
+    act(() => result.current.setIngredientQuantityInput(custom.id, '15'))
+    act(() => result.current.setIngredientUnit(custom.id, 'grams'))
+    act(() => result.current.setScaleMultiplierInput('2'))
+
+    expect(result.current.state.result?.totalMassGrams).toBeCloseTo(2000, 12)
+    expect(result.current.state.result?.ingredients.find((item) => item.id === custom.id)?.grams).toBe(15)
+  })
+
+  it('suppresses results for an invalid scale multiplier', () => {
+    const { result } = renderHook(() => useCalculator())
+    act(() => result.current.setScaleMultiplierInput(''))
+    expect(result.current.state.result).toBeNull()
+    expect(result.current.state.errors).toContain('Ingresá un multiplicador válido.')
+  })
+
+  it('rejects fractional piece counts instead of rounding', () => {
+    const { result } = renderHook(() => useCalculator())
+    act(() => result.current.setMode('pieces'))
+    act(() => result.current.setPieceCountInput('2,5'))
+
+    expect(result.current.state.result).toBeNull()
+    expect(result.current.state.errors).toContain('La cantidad de piezas debe ser un entero mayor que 0.')
+  })
+})
