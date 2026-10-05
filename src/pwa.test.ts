@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { PAGES_BASE, createViteConfig, pwaManifest } from '../vite.config'
 
@@ -7,6 +9,12 @@ describe('PWA and Pages configuration', () => {
     expect(PAGES_BASE).toBe('/PanaCalc/')
     expect(createViteConfig('production').base).toBe('/PanaCalc/')
     expect(createViteConfig('development').base).toBe('/')
+  })
+
+  it('ships every icon referenced by the manifest', () => {
+    for (const icon of ['icon-192.png', 'icon-512.png', 'maskable-512.png']) {
+      expect(existsSync(resolve('public/icons', icon)), `missing public/icons/${icon}`).toBe(true)
+    }
   })
 
   it('defines an installable scoped manifest with required icons', () => {
