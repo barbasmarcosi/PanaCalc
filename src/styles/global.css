@@ -3,53 +3,103 @@
   color-scheme: light dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  --page-bg: #f7f2e9;
+  --card-bg: #fffdf9;
+  --subtle-bg: #f1eadf;
+  --input-bg: #fffaf2;
+  --text-color: #28231e;
+  --muted-text: #72695f;
+  --border-color: #ded4c7;
+  --input-border: #d5c9b9;
+  --accent: #9a4c19;
+  --accent-strong: #7e3912;
+  --accent-soft: #f4dfcd;
+  --accent-contrast: #fff9f4;
+  --focus-ring: rgb(154 76 25 / 18%);
+  --danger: #a63d36;
+  --card-shadow: 0 12px 35px rgb(65 43 24 / 7%);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html {
   min-width: 320px;
-  background: Canvas;
+  background: var(--page-bg);
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  color: CanvasText;
-  background: Canvas;
+  color: var(--text-color);
+  background:
+    radial-gradient(circle at top right, rgb(218 150 96 / 15%), transparent 34rem),
+    var(--page-bg);
 }
 
-button,
-input,
-select {
-  font: inherit;
+button, input, select { font: inherit; }
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .app-shell {
-  width: min(100% - 2rem, 48rem);
+  width: min(100% - 1.25rem, 64rem);
   margin-inline: auto;
-  padding: 2rem 0 4rem;
+  padding: 1.5rem 0 4rem;
 }
+
+.app-header { padding: 0.25rem 0.35rem; }
 
 .app-header h1 {
   margin: 0;
-  font-size: clamp(2.25rem, 10vw, 4rem);
-  line-height: 1;
+  font-size: clamp(2.45rem, 12vw, 4.8rem);
+  letter-spacing: -0.045em;
+  line-height: 0.95;
 }
 
 .eyebrow {
   margin: 0 0 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 700;
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .subtitle {
   max-width: 34rem;
-  margin: 0.75rem 0 0;
-  color: color-mix(in srgb, CanvasText 68%, transparent);
+  margin: 0.85rem 0 0;
+  color: var(--muted-text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #181512;
+    --card-bg: #211d19;
+    --subtle-bg: #2d2721;
+    --input-bg: #27211c;
+    --text-color: #f5eee6;
+    --muted-text: #b5a99c;
+    --border-color: #3b332b;
+    --input-border: #493e34;
+    --accent: #e68b4e;
+    --accent-strong: #f0a26d;
+    --accent-soft: #3c281b;
+    --accent-contrast: #23160f;
+    --focus-ring: rgb(230 139 78 / 25%);
+    --danger: #f08a82;
+    --card-shadow: 0 16px 45px rgb(0 0 0 / 20%);
+  }
+
+  body {
+    background:
+      radial-gradient(circle at top right, rgb(153 76 25 / 18%), transparent 34rem),
+      var(--page-bg);
+  }
 }
