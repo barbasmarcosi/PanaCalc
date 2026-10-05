@@ -1,3 +1,5 @@
+import { CalculatorPanel } from '../components/CalculatorPanel'
+
 export function App() {
   return (
     <main className="app-shell">
@@ -6,6 +8,7 @@ export function App() {
         <h1>PanaCalc</h1>
         <p className="subtitle">Harina, hidratación y masa total sin vueltas.</p>
       </header>
+      <CalculatorPanel />
     </main>
   )
 }
