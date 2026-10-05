@@ -56,6 +56,37 @@ export function ResultsCard({ state, onResultUnitChange }: ResultsCardProps) {
           <dd>{mass(state.result.totalMassGrams)}</dd>
         </div>
       </dl>
+
+      {state.result.prefermentBreakdown.preferments.length > 0 ? (
+        <div className="preferment-results" aria-label="Desglose de prefermentos">
+          <h3>Prefermentos</h3>
+          {state.result.prefermentBreakdown.preferments.map((preferment) => (
+            <div className="preferment-result-card" key={preferment.id}>
+              <strong>{preferment.name}</strong>
+              <dl>
+                <div className="result-row">
+                  <dt>Harina en prefermento</dt>
+                  <dd>{mass(preferment.flourGrams)}</dd>
+                </div>
+                <div className="result-row">
+                  <dt>Agua en prefermento</dt>
+                  <dd>{mass(preferment.waterGrams)}</dd>
+                </div>
+              </dl>
+            </div>
+          ))}
+          <dl className="final-mix-results">
+            <div className="result-row">
+              <dt>Harina mezcla final</dt>
+              <dd>{mass(state.result.prefermentBreakdown.finalMixFlourGrams)}</dd>
+            </div>
+            <div className="result-row">
+              <dt>Agua mezcla final</dt>
+              <dd>{mass(state.result.prefermentBreakdown.finalMixWaterGrams)}</dd>
+            </div>
+          </dl>
+        </div>
+      ) : null}
     </section>
   )
 }
