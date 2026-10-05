@@ -63,18 +63,24 @@ export function IngredientEditor({ calculator }: IngredientEditorProps) {
                 />
               </label>
 
-              <label className="unit-field">
-                <span className="sr-only">Unidad de {currentName}</span>
-                <select
-                  aria-label={`Unidad de ${currentName}`}
-                  className="unit-select"
-                  value={ingredient.unit}
-                  onChange={(event) => calculator.setIngredientUnit(ingredient.id, event.target.value as IngredientUnit)}
-                >
-                  <option value="percent">%</option>
-                  <option value="grams">g</option>
-                </select>
-              </label>
+              <div className="unit-field">
+                {isCustom ? (
+                  <label>
+                    <span className="sr-only">Unidad de {currentName}</span>
+                    <select
+                      aria-label={`Unidad de ${currentName}`}
+                      className="unit-select"
+                      value={ingredient.unit}
+                      onChange={(event) => calculator.setIngredientUnit(ingredient.id, event.target.value as IngredientUnit)}
+                    >
+                      <option value="percent">%</option>
+                      <option value="grams">g</option>
+                    </select>
+                  </label>
+                ) : (
+                  <span className="unit-select unit-display" aria-label={`Unidad de ${currentName}`}>%</span>
+                )}
+              </div>
 
               {isCustom ? (
                 <button
