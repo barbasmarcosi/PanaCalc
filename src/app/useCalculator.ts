@@ -261,7 +261,25 @@ export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESS
 
   function setIngredientMassUnit(id: string, unit: MassUnit) {
     const ingredient = formula.ingredients.find((item) => item.id === id)
-    if (!ingredient || ingredient.unit !== 'grams') return
+    if (!ingredient || ingredient.kind === 'water') return
+
+    if (ingredient.unit === 'percent') {
+      const parsedInput = parseDecimalInput(quantityInputs[id] ?? '')
+      setFormula((current) => ({
+        ...current,
+        ingredients: current.ingredients.map((item) => (
+          item.id === id
+            ? {
+                ...item,
+                unit: 'grams',
+                massUnit: unit,
+                quantity: parsedInput === null ? item.quantity : toGrams(parsedInput, unit),
+              }
+            : item
+        )),
+      }))
+      return
+    }
 
     setQuantityInputs((current) => ({
       ...current,
