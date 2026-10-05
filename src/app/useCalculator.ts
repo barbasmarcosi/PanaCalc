@@ -28,6 +28,8 @@ export interface CalculatorViewState {
   resultUnit: MassUnit
   formula: DoughFormula
   quantityInputs: Record<string, string>
+  prefermentFlourInputs: Record<string, string>
+  prefermentHydrationInputs: Record<string, string>
   result: DoughResult | null
   errors: string[]
 }
@@ -52,6 +54,14 @@ function buildQuantityInputs(formula: DoughFormula): Record<string, string> {
   ]))
 }
 
+function buildPrefermentInputs(formula: DoughFormula) {
+  const preferments = formula.preferments ?? []
+  return {
+    flour: Object.fromEntries(preferments.map((preferment) => [preferment.id, String(preferment.flourPercent)])),
+    hydration: Object.fromEntries(preferments.map((preferment) => [preferment.id, String(preferment.hydrationPercent)])),
+  }
+}
+
 export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESSION_V2) {
   const [mode, setMode] = useState<ProductionMode>(initialSession.production.mode)
   const [targetInput, setTargetInput] = useState(initialSession.production.targetInput)
@@ -63,6 +73,9 @@ export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESS
   const [resultUnit, setResultUnit] = useState<MassUnit>(initialSession.production.resultUnit)
   const [formula, setFormula] = useState<DoughFormula>(() => cloneFormula(initialSession.formula))
   const [quantityInputs, setQuantityInputs] = useState<Record<string, string>>(() => buildQuantityInputs(initialSession.formula))
+  const initialPrefermentInputs = buildPrefermentInputs(initialSession.formula)
+  const [prefermentFlourInputs, setPrefermentFlourInputs] = useState<Record<string, string>>(initialPrefermentInputs.flour)
+  const [prefermentHydrationInputs, setPrefermentHydrationInputs] = useState<Record<string, string>>(initialPrefermentInputs.hydration)
 
   const state = useMemo<CalculatorViewState>(() => {
     const errors: string[] = []
@@ -70,6 +83,16 @@ export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESS
     for (const ingredient of formula.ingredients) {
       if (parseDecimalInput(quantityInputs[ingredient.id] ?? '') === null) {
         errors.push(`Ingresá una cantidad válida para ${ingredient.name.trim() || 'el ingrediente'}.`)
+      }
+    }
+
+    for (const preferment of formula.preferments ?? []) {
+      const name = preferment.name.trim() || 'Prefermento'
+      if (parseDecimalInput(prefermentFlourInputs[preferment.id] ?? '') === null) {
+        errors.push(`Ingresá un porcentaje de harina válido para ${name}.`)
+      }
+      if (parseDecimalInput(prefermentHydrationInputs[preferment.id] ?? '') === null) {
+        errors.push(`Ingresá una hidratación válida para ${name}.`)
       }
     }
 
@@ -109,6 +132,8 @@ export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESS
         resultUnit,
         formula,
         quantityInputs,
+        prefermentFlourInputs,
+        prefermentHydrationInputs,
         result: null,
         errors,
       }
@@ -127,6 +152,8 @@ export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESS
         resultUnit,
         formula,
         quantityInputs,
+        prefermentFlourInputs,
+        prefermentHydrationInputs,
         result: null,
         errors,
       }
@@ -147,6 +174,8 @@ export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESS
         resultUnit,
         formula,
         quantityInputs,
+        prefermentFlourInputs,
+        prefermentHydrationInputs,
         result: null,
         errors,
       }
@@ -167,6 +196,8 @@ export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESS
       resultUnit,
       formula,
       quantityInputs,
+      prefermentFlourInputs,
+      prefermentHydrationInputs,
       result,
       errors,
     }
@@ -176,6 +207,8 @@ export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESS
     pieceCountInput,
     pieceMassInput,
     pieceMassUnit,
+    prefermentFlourInputs,
+    prefermentHydrationInputs,
     quantityInputs,
     resultUnit,
     scaleMultiplierInput,
@@ -294,6 +327,69 @@ export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESS
     }))
   }
 
+  function addPreferment() {
+    const id = createId()
+    setFormula((current) => ({
+      ...current,
+      preferments: [
+        ...(current.preferments ?? []),
+        { id, name: 'Prefermento', flourPercent: 20, hydrationPercent: 100 },
+      ],
+    }))
+    setPrefermentFlourInputs((current) => ({ ...current, [id]: '20' }))
+    setPrefermentHydrationInputs((current) => ({ ...current, [id]: '100' }))
+  }
+
+  function removePreferment(id: string) {
+    setFormula((current) => ({
+      ...current,
+      preferments: (current.preferments ?? []).filter((preferment) => preferment.id !== id),
+    }))
+    setPrefermentFlourInputs((current) => {
+      const next = { ...current }
+      delete next[id]
+      return next
+    })
+    setPrefermentHydrationInputs((current) => {
+      const next = { ...current }
+      delete next[id]
+      return next
+    })
+  }
+
+  function setPrefermentName(id: string, name: string) {
+    setFormula((current) => ({
+      ...current,
+      preferments: (current.preferments ?? []).map((preferment) => (
+        preferment.id === id ? { ...preferment, name } : preferment
+      )),
+    }))
+  }
+
+  function setPrefermentFlourPercentInput(id: string, value: string) {
+    setPrefermentFlourInputs((current) => ({ ...current, [id]: value }))
+    const parsed = parseDecimalInput(value)
+    if (parsed === null) return
+    setFormula((current) => ({
+      ...current,
+      preferments: (current.preferments ?? []).map((preferment) => (
+        preferment.id === id ? { ...preferment, flourPercent: parsed } : preferment
+      )),
+    }))
+  }
+
+  function setPrefermentHydrationPercentInput(id: string, value: string) {
+    setPrefermentHydrationInputs((current) => ({ ...current, [id]: value }))
+    const parsed = parseDecimalInput(value)
+    if (parsed === null) return
+    setFormula((current) => ({
+      ...current,
+      preferments: (current.preferments ?? []).map((preferment) => (
+        preferment.id === id ? { ...preferment, hydrationPercent: parsed } : preferment
+      )),
+    }))
+  }
+
   function addIngredient() {
     const id = createId()
     setFormula((current) => ({
@@ -323,8 +419,11 @@ export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESS
 
   function replaceFormula(nextFormula: DoughFormula) {
     const cloned = cloneFormula(nextFormula)
+    const prefermentInputs = buildPrefermentInputs(cloned)
     setFormula(cloned)
     setQuantityInputs(buildQuantityInputs(cloned))
+    setPrefermentFlourInputs(prefermentInputs.flour)
+    setPrefermentHydrationInputs(prefermentInputs.hydration)
   }
 
   return {
@@ -341,6 +440,11 @@ export function useCalculator(initialSession: CalculatorSessionV2 = DEFAULT_SESS
     setIngredientQuantityInput,
     setIngredientUnit,
     setIngredientMassUnit,
+    addPreferment,
+    removePreferment,
+    setPrefermentName,
+    setPrefermentFlourPercentInput,
+    setPrefermentHydrationPercentInput,
     addIngredient,
     removeIngredient,
     replaceFormula,
