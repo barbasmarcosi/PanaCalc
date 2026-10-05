@@ -143,4 +143,113 @@ describe('V2 storage keys and isolation', () => {
     expect(storage.reads).toEqual(['panacalc.preview.session.v2'])
     expect(storage.writes).toEqual([])
   })
+  it('migrates the exact V1 session and preset envelopes without mutating legacy payloads', () => {
+    const storage = new LoggingStorage()
+    const legacySessionRaw = JSON.stringify({
+      version: 1,
+      data: {
+        mode: 'flour',
+        targetInput: '650,5',
+        formula: {
+          ingredients: [
+            { id: 'water', name: 'Agua', quantity: 75, unit: 'percent', kind: 'water' },
+            { id: 'salt', name: 'Sal', quantity: 2.5, unit: 'percent', kind: 'custom' },
+            { id: 'oil', name: 'Aceite', quantity: 15, unit: 'grams', kind: 'custom' },
+          ],
+        },
+      },
+    })
+    const legacyPresetsRaw = JSON.stringify({
+      version: 1,
+      data: [{
+        id: 'pizza',
+        name: 'Pizza',
+        formula: {
+          ingredients: [
+            { id: 'water', name: 'Agua', quantity: 70, unit: 'percent', kind: 'water' },
+            { id: 'oil', name: 'Aceite', quantity: 10, unit: 'grams', kind: 'custom' },
+          ],
+        },
+        createdAt: '2026-10-05T00:00:00.000Z',
+        updatedAt: '2026-10-05T00:00:00.000Z',
+      }],
+    })
+
+    storage.setItem(LEGACY_SESSION_KEY, legacySessionRaw)
+    storage.setItem(LEGACY_PRESETS_KEY, legacyPresetsRaw)
+    storage.reads = []
+    storage.writes = []
+
+    const migratedSession = loadSessionV2(storage, 'production')
+    const migratedPresets = loadPresetsV2(storage, 'production')
+
+    expect(migratedSession.production).toMatchObject({
+      mode: 'flour',
+      targetInput: '650,5',
+      targetUnit: 'g',
+      scaleMultiplierInput: '1',
+      resultUnit: 'g',
+    })
+    expect(migratedSession.formula.ingredients.find((item) => item.id === 'oil')).toMatchObject({
+      quantity: 15,
+      unit: 'grams',
+      massUnit: 'g',
+    })
+    expect(migratedPresets).toHaveLength(1)
+    expect(migratedPresets[0]).toMatchObject({
+      id: 'pizza',
+      name: 'Pizza',
+      favorite: false,
+      category: null,
+    })
+    expect(migratedPresets[0].formula.ingredients.find((item) => item.id === 'oil')).toMatchObject({
+      quantity: 10,
+      massUnit: 'g',
+    })
+
+    expect(storage.getItem(LEGACY_SESSION_KEY)).toBe(legacySessionRaw)
+    expect(storage.getItem(LEGACY_PRESETS_KEY)).toBe(legacyPresetsRaw)
+  })
+
+  it('is idempotent after V1 migration and stops consulting or rewriting legacy data', () => {
+    const storage = new LoggingStorage()
+    storage.setItem(LEGACY_SESSION_KEY, JSON.stringify({
+      version: 1,
+      data: {
+        mode: 'totalMass',
+        targetInput: '1000',
+        formula: {
+          ingredients: [
+            { id: 'water', name: 'Agua', quantity: 70, unit: 'percent', kind: 'water' },
+          ],
+        },
+      },
+    }))
+    storage.setItem(LEGACY_PRESETS_KEY, JSON.stringify({
+      version: 1,
+      data: [{
+        id: 'pan',
+        name: 'Pan',
+        formula: {
+          ingredients: [
+            { id: 'water', name: 'Agua', quantity: 70, unit: 'percent', kind: 'water' },
+          ],
+        },
+        createdAt: '2026-10-05T00:00:00.000Z',
+        updatedAt: '2026-10-05T00:00:00.000Z',
+      }],
+    }))
+
+    loadSessionV2(storage, 'production')
+    loadPresetsV2(storage, 'production')
+    storage.reads = []
+    storage.writes = []
+
+    loadSessionV2(storage, 'production')
+    loadPresetsV2(storage, 'production')
+
+    expect(storage.reads).toEqual(['panacalc.session.v2', 'panacalc.presets.v2'])
+    expect(storage.writes).toEqual([])
+  })
+
 })
