@@ -2,6 +2,7 @@ import { useCalculator } from '../app/useCalculator'
 import type { ReturnTypeOfUseCalculator } from './calculatorTypes'
 import { IngredientEditor } from './IngredientEditor'
 import { ModeSelector } from './ModeSelector'
+import { ProductionControls } from './ProductionControls'
 import { ResultsCard } from './ResultsCard'
 import '../styles/calculator.css'
 
@@ -11,8 +12,6 @@ interface CalculatorPanelProps {
 
 function CalculatorPanelContent({ calculator }: { calculator: ReturnTypeOfUseCalculator }) {
   const { state } = calculator
-  const isTotalMass = state.mode === 'totalMass'
-  const targetLabel = isTotalMass ? 'Masa total objetivo' : 'Harina disponible'
 
   return (
     <div className="calculator-layout">
@@ -22,26 +21,12 @@ function CalculatorPanelContent({ calculator }: { calculator: ReturnTypeOfUseCal
           <ModeSelector mode={state.mode} onChange={calculator.setMode} />
         </div>
 
-        <div className="calculator-section target-section">
-          <label className="target-label" htmlFor="target-grams">{targetLabel}</label>
-          <div className="target-input-wrap">
-            <input
-              id="target-grams"
-              className="target-input"
-              aria-label={targetLabel}
-              inputMode="decimal"
-              value={state.targetInput}
-              onChange={(event) => calculator.setTargetInput(event.target.value)}
-            />
-            <span className="input-suffix">g</span>
-          </div>
-        </div>
-
+        <ProductionControls calculator={calculator} />
         <IngredientEditor calculator={calculator} />
       </section>
 
       <aside className="results-column">
-        <ResultsCard state={state} />
+        <ResultsCard state={state} onResultUnitChange={calculator.setResultUnit} />
       </aside>
     </div>
   )
