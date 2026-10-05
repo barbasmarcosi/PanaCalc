@@ -1,15 +1,13 @@
-import { formatGrams } from '../domain/dough/numbers'
 import type { CalculatorViewState } from '../app/useCalculator'
+import { formatMass, type MassUnit } from '../domain/mass/units'
+import { MassUnitSelect } from './MassUnitSelect'
 
 interface ResultsCardProps {
   state: CalculatorViewState
+  onResultUnitChange?: (unit: MassUnit) => void
 }
 
-function grams(value: number) {
-  return `${formatGrams(value, 'es-AR')} g`
-}
-
-export function ResultsCard({ state }: ResultsCardProps) {
+export function ResultsCard({ state, onResultUnitChange }: ResultsCardProps) {
   if (state.errors.length > 0 || !state.result) {
     return (
       <div className="validation-card" role="alert">
@@ -21,6 +19,8 @@ export function ResultsCard({ state }: ResultsCardProps) {
     )
   }
 
+  const mass = (grams: number) => formatMass(grams, state.resultUnit, 'es-AR')
+
   return (
     <section className="results-card" aria-label="Resultado">
       <div className="result-heading">
@@ -28,23 +28,32 @@ export function ResultsCard({ state }: ResultsCardProps) {
           <p className="section-kicker">Resultado</p>
           <h2>Tu masa</h2>
         </div>
-        <span className="total-chip">{grams(state.result.totalMassGrams)}</span>
+        <div className="result-tools">
+          {onResultUnitChange ? (
+            <MassUnitSelect
+              value={state.resultUnit}
+              onChange={onResultUnitChange}
+              label="Unidad de resultados"
+            />
+          ) : null}
+          <span className="total-chip">{mass(state.result.totalMassGrams)}</span>
+        </div>
       </div>
 
       <dl className="result-list">
         <div className="result-row emphasized-result">
           <dt>Harina</dt>
-          <dd>{grams(state.result.flourGrams)}</dd>
+          <dd>{mass(state.result.flourGrams)}</dd>
         </div>
         {state.result.ingredients.map((ingredient) => (
           <div className="result-row" key={ingredient.id}>
             <dt>{ingredient.name || 'Ingrediente'}</dt>
-            <dd>{grams(ingredient.grams)}</dd>
+            <dd>{mass(ingredient.grams)}</dd>
           </div>
         ))}
         <div className="result-row total-result">
           <dt>Masa total</dt>
-          <dd>{grams(state.result.totalMassGrams)}</dd>
+          <dd>{mass(state.result.totalMassGrams)}</dd>
         </div>
       </dl>
     </section>
