@@ -55,6 +55,12 @@ describe('CalculatorPanel', () => {
     expect(screen.queryByRole('button', { name: 'Eliminar Agua' })).not.toBeInTheDocument()
   })
 
+  it('keeps water fixed as a baker percentage', () => {
+    render(<CalculatorPanel />)
+    expect(screen.queryByRole('combobox', { name: 'Unidad de Agua' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Unidad de Agua')).toHaveTextContent('%')
+  })
+
   it('uses decimal mobile keyboards for numeric inputs', () => {
     render(<CalculatorPanel />)
     expect(screen.getByLabelText('Masa total objetivo')).toHaveAttribute('inputmode', 'decimal')
