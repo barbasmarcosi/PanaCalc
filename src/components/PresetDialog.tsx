@@ -5,12 +5,20 @@ type DialogMode = 'save' | 'rename'
 interface PresetDialogProps {
   mode: DialogMode
   initialName?: string
-  onConfirm: (name: string) => boolean
+  initialCategory?: string | null
+  onConfirm: (name: string, category: string | null) => boolean
   onClose: () => void
 }
 
-export function PresetDialog({ mode, initialName = '', onConfirm, onClose }: PresetDialogProps) {
+export function PresetDialog({
+  mode,
+  initialName = '',
+  initialCategory = null,
+  onConfirm,
+  onClose,
+}: PresetDialogProps) {
   const [name, setName] = useState(initialName)
+  const [category, setCategory] = useState(initialCategory ?? '')
   const [error, setError] = useState<string | null>(null)
   const titleId = useId()
   const title = mode === 'save' ? 'Guardar fórmula' : 'Renombrar fórmula'
@@ -18,8 +26,9 @@ export function PresetDialog({ mode, initialName = '', onConfirm, onClose }: Pre
 
   useEffect(() => {
     setName(initialName)
+    setCategory(initialCategory ?? '')
     setError(null)
-  }, [initialName, mode])
+  }, [initialCategory, initialName, mode])
 
   function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -27,7 +36,7 @@ export function PresetDialog({ mode, initialName = '', onConfirm, onClose }: Pre
       setError('Escribí un nombre para la fórmula.')
       return
     }
-    if (onConfirm(name)) onClose()
+    if (onConfirm(name, category.trim() || null)) onClose()
   }
 
   return (
@@ -49,6 +58,16 @@ export function PresetDialog({ mode, initialName = '', onConfirm, onClose }: Pre
                 setName(event.target.value)
                 setError(null)
               }}
+            />
+          </label>
+          <label className="dialog-label">
+            Categoría
+            <input
+              className="text-input dialog-input"
+              aria-label="Categoría"
+              placeholder="Ej. Pizza, Pan, Focaccia"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
             />
           </label>
           {error ? <p className="dialog-error" role="alert">{error}</p> : null}
