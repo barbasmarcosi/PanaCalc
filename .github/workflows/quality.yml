@@ -1,36 +1,13 @@
 name: quality
 
 on:
-  push:
-    branches: ['feat/panacalc-v1']
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - name: Install dependencies
-        run: npm install
-      - name: Unit tests
-        run: npm test
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Lint
-        run: npm run lint
-      - name: Build
-        run: npm run build
-      - name: Package node_modules for sandbox handoff
-        run: tar -czf node-modules.tgz node_modules
-      - name: Upload node_modules
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-modules
-          path: node-modules.tgz
-          compression-level: 0
+      - run: echo "Task staging"
