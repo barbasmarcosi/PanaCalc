@@ -1,40 +1,63 @@
 import { useEffect, useRef, useState } from 'react'
 import type { DoughFormula } from '../domain/dough/types'
 import {
-  loadPresets,
-  loadSession,
-  savePresets,
-  saveSession,
+  loadPresetsV2,
+  loadSessionV2,
+  savePresetsV2,
+  saveSessionV2,
 } from '../storage/localStorage'
-import type { FormulaPreset } from '../storage/types'
+import type { FormulaPresetV2 } from '../storage/types'
 import { createId } from './id'
 import { useCalculator } from './useCalculator'
 
 const PERSISTENCE_WARNING = 'No se pudieron guardar los cambios en este dispositivo.'
 
 function cloneFormula(formula: DoughFormula): DoughFormula {
-  return { ingredients: formula.ingredients.map((ingredient) => ({ ...ingredient })) }
+  return {
+    ingredients: formula.ingredients.map((ingredient) => ({ ...ingredient })),
+    preferments: formula.preferments?.map((preferment) => ({ ...preferment })),
+  }
 }
 
 export function usePersistentCalculator(storage?: Storage) {
   const storageRef = useRef<Storage | undefined>(storage)
-  const initialSessionRef = useRef(loadSession(storageRef.current))
+  const initialSessionRef = useRef(loadSessionV2(storageRef.current))
+  const plannerRef = useRef(initialSessionRef.current.planner)
   const calculator = useCalculator(initialSessionRef.current)
-  const [presets, setPresets] = useState<FormulaPreset[]>(() => loadPresets(storageRef.current))
+  const [presets, setPresets] = useState<FormulaPresetV2[]>(() => loadPresetsV2(storageRef.current))
   const [persistenceWarning, setPersistenceWarning] = useState<string | null>(null)
 
   useEffect(() => {
-    const ok = saveSession({
-      mode: calculator.state.mode,
-      targetInput: calculator.state.targetInput,
+    const ok = saveSessionV2({
+      production: {
+        mode: calculator.state.mode,
+        targetInput: calculator.state.targetInput,
+        targetUnit: calculator.state.targetUnit,
+        pieceCountInput: calculator.state.pieceCountInput,
+        pieceMassInput: calculator.state.pieceMassInput,
+        pieceMassUnit: calculator.state.pieceMassUnit,
+        scaleMultiplierInput: calculator.state.scaleMultiplierInput,
+        resultUnit: calculator.state.resultUnit,
+      },
       formula: calculator.state.formula,
+      planner: plannerRef.current,
     }, storageRef.current)
     setPersistenceWarning(ok ? null : PERSISTENCE_WARNING)
-  }, [calculator.state.formula, calculator.state.mode, calculator.state.targetInput])
+  }, [
+    calculator.state.formula,
+    calculator.state.mode,
+    calculator.state.pieceCountInput,
+    calculator.state.pieceMassInput,
+    calculator.state.pieceMassUnit,
+    calculator.state.resultUnit,
+    calculator.state.scaleMultiplierInput,
+    calculator.state.targetInput,
+    calculator.state.targetUnit,
+  ])
 
-  function commitPresets(next: FormulaPreset[]) {
+  function commitPresets(next: FormulaPresetV2[]) {
     setPresets(next)
-    const ok = savePresets(next, storageRef.current)
+    const ok = savePresetsV2(next, storageRef.current)
     setPersistenceWarning(ok ? null : PERSISTENCE_WARNING)
     return ok
   }
@@ -44,10 +67,12 @@ export function usePersistentCalculator(storage?: Storage) {
     if (!trimmed) return false
 
     const now = new Date().toISOString()
-    const preset: FormulaPreset = {
+    const preset: FormulaPresetV2 = {
       id: createId(),
       name: trimmed,
       formula: cloneFormula(calculator.state.formula),
+      favorite: false,
+      category: null,
       createdAt: now,
       updatedAt: now,
     }
@@ -78,10 +103,12 @@ export function usePersistentCalculator(storage?: Storage) {
     const source = presets.find((preset) => preset.id === id)
     if (!source) return false
     const now = new Date().toISOString()
-    const duplicate: FormulaPreset = {
+    const duplicate: FormulaPresetV2 = {
       id: createId(),
       name: `${source.name} copia`,
       formula: cloneFormula(source.formula),
+      favorite: source.favorite,
+      category: source.category,
       createdAt: now,
       updatedAt: now,
     }
