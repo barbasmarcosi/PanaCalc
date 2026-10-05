@@ -703,3 +703,35 @@
     text-align: left;
   }
 }
+
+
+.preset-search {
+  display: block;
+  margin-top: 1rem;
+}
+
+.preset-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.preset-category {
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: var(--subtle-bg);
+  color: var(--muted-text);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.favorite-button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.preset-actions button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
