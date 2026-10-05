@@ -212,17 +212,17 @@ V2 exposes convenient explicit scale controls, initially:
 
 Scaling is a production convenience, not a mutation of the stored formula definition.
 
-The preferred implementation keeps the formula stable and applies the multiplier to the scalable production basis.
+Its meaning depends on the production mode:
 
-Fixed absolute ingredients remain unchanged according to Section 5.
+- in total-mass mode, the multiplier applies to the entered total-mass target;
+- in flour mode, the multiplier applies to the entered flour amount;
+- in pieces mode, no separate multiplier is shown because piece count already provides the discrete batch-scaling control.
 
-A scale multiplier must be persisted as session/production state only if doing so improves continuity; it is not inherently part of a saved formula.
-
-## 8. Preferments
+The formula remain## 8. Preferments
 
 ### 8.1 Goal
 
-Preferments must be represented explicitly enough that PanaCalc can distinguish flour and water already contained in a preferment from flour and water still required in the final mix.
+Preferments must be represented explicitly enough that PanaCalc can distinguish flour and water already contained in a preferment from flour and water still required in the final mix, while keeping saved formulas independent of batch size.
 
 V2 should support common patterns including:
 
@@ -237,19 +237,22 @@ A preferment contains at minimum:
 
 - stable id;
 - name;
-- flour mass contribution;
-- water mass contribution;
-- optional additional ingredients only if the implementation can preserve clarity.
+- percentage of total formula flour allocated to the preferment;
+- preferment hydration percentage.
 
-Preferment flour and water count toward the overall formula totals.
+The preferment is therefore formula-relative, not stored as fixed batch grams.
 
-For example:
+Example:
 
 ```
-overall flour required: 1000 g
-overall water required: 700 g
+total flour required: 1000 g
+overall hydration: 70%
 
 preferment:
+  flour share: 20%
+  hydration: 100%
+
+calculated preferment:
   flour: 200 g
   water: 200 g
 
@@ -258,12 +261,38 @@ final mix:
   water remaining: 500 g
 ```
 
+A lower-hydration biga can use the same model, for example 20% flour share at 50% preferment hydration.
+
 The result view must make clear:
 
-- total flour;
-- total water;
-- preferment contribution;
+- total formula flour;
+- total formula water;
+- preferment flour/water contribution;
 - remaining final-mix flour/water.
+
+### 8.3 Baker's-percentage consistency
+
+Overall baker's percentages remain referenced to total formula flour, including flour contained in preferments.
+
+Preferment flour share is a percentage of total flour. Preferment hydration is a percentage of the preferment's flour.
+
+Preferment calculations must not double-count flour or water.
+
+The sum of preferment water contribution must not exceed total formula water. Invalid/impossible configurations produce validation errors rather than negative final-mix values.
+
+### 8.4 Multiple preferments
+
+The data model should permit more than one preferment, provided the combined flour shares and water contributions remain valid.
+
+This keeps the domain extensible without requiring V2 to provide specialized biological models for each preferment type.
+
+### 8.5 Scope guard
+
+V2 does not attempt to mathematically predict fermentation performance from inoculation, temperature, flour type, pH, or microbial activity.
+
+Preferments are composition structures, not biological simulation.
+
+al-mix flour/water.
 
 ### 8.3 Baker's-percentage consistency
 
@@ -551,9 +580,11 @@ Cover:
 
 Cover:
 
-- poolish-style equal flour/water contribution;
+- poolish-style flour-share + 100% hydration;
 - lower-hydration biga;
+- multiple preferments;
 - preferment deduction from final-mix flour/water;
+- formula scaling without storing batch-specific preferment grams;
 - no double counting;
 - impossible preferment contribution validation.
 
