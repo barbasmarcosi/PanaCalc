@@ -1,11 +1,12 @@
 name: quality
 
 on:
-  pull_request:
-    branches: ['main']
   push:
     branches: ['main']
   workflow_dispatch:
+
+# V2 development: PR-triggered CI is temporarily disabled to avoid one Actions run
+# per connector-authored file commit. Re-enable pull_request before marking PR #2 ready.
 
 permissions:
   contents: read
