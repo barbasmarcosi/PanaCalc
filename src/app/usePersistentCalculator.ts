@@ -64,9 +64,10 @@ export function usePersistentCalculator(storage?: Storage) {
     return ok
   }
 
-  function savePreset(name: string): boolean {
+  function savePreset(name: string, category: string | null = null): boolean {
     const trimmed = name.trim()
     if (!trimmed) return false
+    const trimmedCategory = category?.trim() || null
 
     const now = new Date().toISOString()
     const preset: FormulaPresetV2 = {
@@ -74,7 +75,7 @@ export function usePersistentCalculator(storage?: Storage) {
       name: trimmed,
       formula: cloneFormula(calculator.state.formula),
       favorite: false,
-      category: null,
+      category: trimmedCategory,
       createdAt: now,
       updatedAt: now,
     }
@@ -89,14 +90,46 @@ export function usePersistentCalculator(storage?: Storage) {
     return true
   }
 
-  function renamePreset(id: string, name: string): boolean {
+  function updatePresetMetadata(id: string, name: string, category: string | null): boolean {
     const trimmed = name.trim()
     if (!trimmed) return false
+    if (!presets.some((preset) => preset.id === id)) return false
+
     const now = new Date().toISOString()
-    const next = presets.map((preset) => (
-      preset.id === id ? { ...preset, name: trimmed, updatedAt: now } : preset
-    ))
-    if (!next.some((preset) => preset.id === id)) return false
+    const trimmedCategory = category?.trim() || null
+    commitPresets(presets.map((preset) => (
+      preset.id === id
+        ? { ...preset, name: trimmed, category: trimmedCategory, updatedAt: now }
+        : preset
+    )))
+    return true
+  }
+
+  function renamePreset(id: string, name: string): boolean {
+    const preset = presets.find((item) => item.id === id)
+    if (!preset) return false
+    return updatePresetMetadata(id, name, preset.category)
+  }
+
+  function togglePresetFavorite(id: string): boolean {
+    if (!presets.some((preset) => preset.id === id)) return false
+    const now = new Date().toISOString()
+    commitPresets(presets.map((preset) => (
+      preset.id === id
+        ? { ...preset, favorite: !preset.favorite, updatedAt: now }
+        : preset
+    )))
+    return true
+  }
+
+  function movePreset(id: string, direction: 'up' | 'down'): boolean {
+    const index = presets.findIndex((preset) => preset.id === id)
+    if (index < 0) return false
+    const target = direction === 'up' ? index - 1 : index + 1
+    if (target < 0 || target >= presets.length) return false
+
+    const next = [...presets]
+    ;[next[index], next[target]] = [next[target], next[index]]
     commitPresets(next)
     return true
   }
@@ -143,6 +176,9 @@ export function usePersistentCalculator(storage?: Storage) {
     savePreset,
     loadPreset,
     renamePreset,
+    updatePresetMetadata,
+    togglePresetFavorite,
+    movePreset,
     duplicatePreset,
     deletePreset,
     updatePresetFromCurrentFormula,
