@@ -66,6 +66,22 @@ describe('session storage', () => {
     storage.setItem = () => { throw new DOMException('quota', 'QuotaExceededError') }
     expect(saveSession(session, storage)).toBe(false)
   })
+
+  it('rejects persisted formulas where water is not percentage-based', () => {
+    const storage = new MemoryStorage()
+    storage.setItem(SESSION_KEY, JSON.stringify({
+      version: 1,
+      data: {
+        ...session,
+        formula: {
+          ingredients: [
+            { id: 'water', name: 'Agua', quantity: 70, unit: 'grams', kind: 'water' },
+          ],
+        },
+      },
+    }))
+    expect(loadSession(storage)).toEqual(DEFAULT_SESSION)
+  })
 })
 
 describe('preset storage', () => {
