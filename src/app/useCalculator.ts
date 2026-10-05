@@ -83,7 +83,9 @@ export function useCalculator(initialSession: CalculatorSession = DEFAULT_SESSIO
   function setIngredientUnit(id: string, unit: IngredientUnit) {
     setFormula((current) => ({
       ingredients: current.ingredients.map((ingredient) => (
-        ingredient.id === id ? { ...ingredient, unit } : ingredient
+        ingredient.id === id && ingredient.kind !== 'water'
+          ? { ...ingredient, unit }
+          : ingredient
       )),
     }))
   }
