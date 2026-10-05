@@ -54,6 +54,12 @@ describe('useCalculator', () => {
     expect(result.current.state.formula.ingredients.some((item) => item.id === 'water')).toBe(true)
   })
 
+  it('does not switch water to absolute grams', () => {
+    const { result } = renderHook(() => useCalculator())
+    act(() => result.current.setIngredientUnit('water', 'grams'))
+    expect(result.current.state.formula.ingredients.find((item) => item.id === 'water')?.unit).toBe('percent')
+  })
+
   it('replaces formula but preserves mode and target', () => {
     const { result } = renderHook(() => useCalculator())
     const formula: DoughFormula = {
