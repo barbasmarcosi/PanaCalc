@@ -1,7 +1,7 @@
 # PanaCalc V1 — Design Specification
 
 Date: 2026-10-05
-Status: Approved design, pending implementation plan
+Status: Design approved; written specification pending user review
 Repository: `barbasmarcosi/PanaCalc`
 
 ## 1. Product intent
@@ -28,9 +28,9 @@ It is not treated as a freely removable ingredient.
 A new formula starts with:
 
 - Flour — fixed reference at 100%
-- Water — percentage-based, default editable hydration value
+- Water — percentage-based, 70% default hydration, editable
 
-Water is present by default. Additional ingredients are user-defined.
+Water is present by default and is not removable in V1. A recipe that does not use water can set it to 0%. Additional ingredients are user-defined.
 
 ### 2.3 Additional ingredients
 
