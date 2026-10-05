@@ -1,8 +1,8 @@
-import type { CalculationMode } from '../storage/types'
+import type { ProductionMode } from '../domain/production/types'
 
 interface ModeSelectorProps {
-  mode: CalculationMode
-  onChange: (mode: CalculationMode) => void
+  mode: ProductionMode
+  onChange: (mode: ProductionMode) => void
 }
 
 export function ModeSelector({ mode, onChange }: ModeSelectorProps) {
