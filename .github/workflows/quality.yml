@@ -1,6 +1,8 @@
 name: quality
 
 on:
+  push:
+    branches: ['feat/panacalc-v1']
   workflow_dispatch:
 
 permissions:
@@ -10,4 +12,12 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Task staging"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
