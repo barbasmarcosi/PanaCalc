@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { loadPresets, loadSession, saveSession } from '../storage/localStorage'
+import { loadPresetsV2, loadSessionV2, saveSession } from '../storage/localStorage'
 import type { CalculatorSession } from '../storage/types'
 import { usePersistentCalculator } from './usePersistentCalculator'
 
@@ -35,7 +35,7 @@ describe('usePersistentCalculator', () => {
     expect(result.current.calculator.state.formula.ingredients[0].quantity).toBe(75)
 
     act(() => result.current.calculator.setTargetInput('700'))
-    await waitFor(() => expect(loadSession(storage).targetInput).toBe('700'))
+    await waitFor(() => expect(loadSessionV2(storage, 'production').production.targetInput).toBe('700'))
   })
 
   it('saves presets as formulas only and loads them without changing mode or target', () => {
@@ -49,7 +49,7 @@ describe('usePersistentCalculator', () => {
 
     expect(result.current.presets).toHaveLength(1)
     expect(result.current.presets[0].name).toBe('Focaccia')
-    expect(loadPresets(storage)[0].formula.ingredients[0].quantity).toBe(80)
+    expect(loadPresetsV2(storage, 'production')[0].formula.ingredients[0].quantity).toBe(80)
 
     act(() => result.current.calculator.setIngredientQuantityInput('water', '60'))
     act(() => result.current.loadPreset(result.current.presets[0].id))
