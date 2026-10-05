@@ -116,3 +116,66 @@ describe('V2 planner persistence', () => {
     })
   })
 })
+
+
+describe('V2 preset organization', () => {
+  it('creates presets with neutral organization metadata', () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+    act(() => result.current.savePreset('Pizza'))
+    expect(result.current.presets[0]).toMatchObject({ favorite: false, category: null })
+  })
+
+  it('toggles favorites and trims category metadata', () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+    act(() => result.current.savePreset('Pizza'))
+    const id = result.current.presets[0].id
+
+    act(() => expect(result.current.togglePresetFavorite(id)).toBe(true))
+    expect(result.current.presets[0].favorite).toBe(true)
+
+    act(() => expect(result.current.updatePresetMetadata(id, '  Pizza nueva  ', '  Pizza  ')).toBe(true))
+    expect(result.current.presets[0]).toMatchObject({ name: 'Pizza nueva', category: 'Pizza' })
+
+    act(() => expect(result.current.updatePresetMetadata(id, 'Pizza nueva', '   ')).toBe(true))
+    expect(result.current.presets[0].category).toBeNull()
+  })
+
+  it('moves presets up and down using persisted array order', () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+    act(() => result.current.savePreset('Uno'))
+    act(() => result.current.savePreset('Dos'))
+    act(() => result.current.savePreset('Tres'))
+    const two = result.current.presets.find((preset) => preset.name === 'Dos')!
+
+    act(() => expect(result.current.movePreset(two.id, 'up')).toBe(true))
+    expect(result.current.presets.map((preset) => preset.name)).toEqual(['Dos', 'Uno', 'Tres'])
+
+    act(() => expect(result.current.movePreset(two.id, 'down')).toBe(true))
+    expect(result.current.presets.map((preset) => preset.name)).toEqual(['Uno', 'Dos', 'Tres'])
+  })
+
+  it('keeps boundary moves as safe no-ops', () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+    act(() => result.current.savePreset('Uno'))
+    const id = result.current.presets[0].id
+    act(() => expect(result.current.movePreset(id, 'up')).toBe(false))
+    act(() => expect(result.current.movePreset(id, 'down')).toBe(false))
+    expect(result.current.presets.map((preset) => preset.name)).toEqual(['Uno'])
+  })
+
+  it('duplicates favorite and category metadata at the end', () => {
+    const storage = new MemoryStorage()
+    const { result } = renderHook(() => usePersistentCalculator(storage))
+    act(() => result.current.savePreset('Pizza', 'Pizza'))
+    const id = result.current.presets[0].id
+    act(() => result.current.togglePresetFavorite(id))
+    act(() => result.current.duplicatePreset(id))
+
+    expect(result.current.presets[1]).toMatchObject({ favorite: true, category: 'Pizza' })
+    expect(result.current.presets[1].id).not.toBe(id)
+  })
+})
