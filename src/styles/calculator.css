@@ -34,7 +34,7 @@
 
 .mode-selector {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -454,5 +454,78 @@
 
   .preset-actions {
     justify-content: flex-end;
+  }
+}
+
+
+.mass-unit-select {
+  width: auto;
+  min-width: 4.7rem;
+}
+
+.target-unit-select {
+  border: 0;
+  background: transparent;
+  font-size: 1rem;
+}
+
+.mass-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.pieces-grid {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.production-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.production-input {
+  min-height: 52px;
+  font-size: 1.15rem;
+}
+
+.scale-controls {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.scale-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.scale-button {
+  min-height: 40px;
+}
+
+.scale-custom-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(5rem, 7rem);
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--muted-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.result-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (min-width: 520px) {
+  .pieces-grid {
+    grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
   }
 }
